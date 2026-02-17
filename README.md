@@ -1,57 +1,72 @@
-# React + TypeScript + Vite
+# Cospec Ltd - Sistema de Gestión de Reclamos
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![React](https://img.shields.io/badge/React-18-blue) ![Vite](https://img.shields.io/badge/Vite-5-purple) ![Supabase](https://img.shields.io/badge/Supabase-Database-green)
 
-Currently, two official plugins are available:
+Una plataforma integral diseñada para optimizar el flujo de trabajo entre la administración y los técnicos de campo en servicios de telecomunicaciones (Fibra Óptica, ADSL, TV, Telefonía).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Características Principales
 
-## Expanding the ESLint configuration
+### 👨‍💼 Panel de Administración
+*   **Gestión de Reclamos**: Alta, modificación y seguimiento de incidencias.
+*   **Asignación Inteligente**: Asignación de técnicos y priorización de tareas.
+*   **Dashboard en Tiempo Real**: Visualización del estado de la red y productividad.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 👷 Panel Técnico (App Móvil / PWA)
+*   **Bolsa de Trabajo**: Visualización de reclamos pendientes y auto-asignación.
+*   **Geolocalización**: Mapa interactivo con la ubicación exacta de los clientes y navegación GPS.
+*   **Gestión de Incidencias**: Cierre de trabajos, reporte de soluciones y comentarios.
+*   **Métricas Personales**: Gráficos de rendimiento semanal, mensual y anual.
+*   **Modo Offline**: Funcionalidad básica sin conexión.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### 🔔 Notificaciones y Comunicación
+*   **Alertas Push**: Notificaciones instantáneas al recibir nuevos trabajos.
+*   **Historial**: Registro completo de trabajos realizados.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🛠️ Tecnologías Utilizadas
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+*   **Frontend**: React.js, TypeScript, Vite
+*   **Estilos**: Tailwind CSS, Lucide Icons
+*   **Base de Datos & Auth**: Supabase (PostgreSQL)
+*   **Mapas**: Leaflet / React-Leaflet
+*   **Gráficos**: Recharts
+*   **PWA**: Vite PWA Plugin
 
-export default tseslint.config({
-  extends: [
-    // other configs...
-    // Enable lint rules for React
-    reactX.configs['recommended-typescript'],
-    // Enable lint rules for React DOM
-    reactDom.configs.recommended,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 📱 Instalación (PWA)
+
+Esta aplicación es una **Progressive Web App**. Puedes instalarla en tu dispositivo móvil o escritorio sin necesidad de tiendas de aplicaciones.
+
+1.  Abre la aplicación en tu navegador (Chrome/Safari).
+2.  **Android/PC**: Haz clic en el botón "Instalar App" que aparece automáticamente o en el menú del navegador "Instalar aplicación".
+3.  **iOS**: Toca el botón "Compartir" y selecciona "Añadir a la pantalla de inicio".
+
+## 🔧 Configuración del Proyecto (Desarrollo)
+
+1.  **Clonar el repositorio**
+    ```bash
+    git clone https://github.com/Rene-Kuhm/gestion-de-reclamos.git
+    cd gestion-de-reclamos
+    ```
+
+2.  **Instalar dependencias**
+    ```bash
+    npm install
+    ```
+
+3.  **Configurar variables de entorno**
+    Crea un archivo `.env` en la raíz con tus credenciales de Supabase:
+    ```env
+    VITE_SUPABASE_URL=tu_url_supabase
+    VITE_SUPABASE_ANON_KEY=tu_anon_key_supabase
+    ```
+
+4.  **Iniciar servidor de desarrollo**
+    ```bash
+    npm run dev
+    ```
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
+
+---
+Desarrollado para **Cospec Ltd**.
