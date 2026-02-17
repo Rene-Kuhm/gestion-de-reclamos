@@ -7,6 +7,16 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig({
   build: {
     sourcemap: 'hidden',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['lucide-react', 'sonner'],
+          charts: ['recharts'],
+          maps: ['leaflet', 'react-leaflet'],
+        },
+      },
+    },
   },
   plugins: [
     react({
