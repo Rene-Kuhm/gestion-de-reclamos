@@ -26,11 +26,14 @@ const HomeRedirect: React.FC = () => {
   return <Navigate to="/login" replace />;
 };
 
+import { InstallPrompt } from './components/InstallPrompt';
+
 function App() {
   return (
     <AuthProvider>
       <Toaster position="top-center" richColors />
       <Router>
+        <InstallPrompt />
         <Routes>
           <Route path="/login" element={<Login />} />
           
