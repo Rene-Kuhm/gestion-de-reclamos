@@ -89,6 +89,7 @@ export const TechDashboard: React.FC = () => {
         (payload) => {
           console.log('Tech change received!', payload);
           fetchTrabajos();
+          
           if (payload.eventType === 'INSERT') {
              // Only notify if it's assigned to me or unassigned
              const newReclamo = payload.new as Reclamo;
@@ -98,6 +99,19 @@ export const TechDashboard: React.FC = () => {
                sendLocalNotification('Nuevo Trabajo Asignado', `Cliente: ${newReclamo.cliente_nombre}`);
              } else if (!newReclamo.tecnico_asignado) {
                // toast.info('Nuevo reclamo disponible en la bolsa'); 
+             }
+          } else if (payload.eventType === 'UPDATE') {
+             const updatedReclamo = payload.new as Reclamo;
+             const oldReclamo = payload.old as Reclamo; // Note: 'old' only contains ID unless Replica Identity is FULL
+             
+             // Check if it was just assigned to me
+             if (updatedReclamo.tecnico_asignado === profile.id) {
+                // If I wasn't assigned before, or if I don't know (safest to just notify if it's now mine and not completed)
+                if (updatedReclamo.estado !== 'completado') {
+                   toast.success('¡Trabajo actualizado/asignado!');
+                   playNotificationSound();
+                   sendLocalNotification('Trabajo Actualizado', `Cliente: ${updatedReclamo.cliente_nombre}`);
+                }
              }
           }
         }
