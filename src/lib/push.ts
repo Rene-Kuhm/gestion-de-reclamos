@@ -36,31 +36,59 @@ export async function enablePushForUser(params: { userId: string; accessToken: s
     return { ok: false } as const;
   }
 
-  const registration = await getOrRegisterServiceWorker();
-  const existing = await registration.pushManager.getSubscription();
-  const subscription =
-    existing ||
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-    }));
+  let registration: ServiceWorkerRegistration;
+  try {
+    registration = await getOrRegisterServiceWorker();
+  } catch (e: any) {
+    toast.error(`No se pudo registrar el Service Worker: ${e?.message || 'error'}`);
+    return { ok: false } as const;
+  }
 
-  const res = await fetch('/api/push/subscribe', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${params.accessToken}`,
-    },
-    body: JSON.stringify({
-      userId: params.userId,
-      subscription: subscription.toJSON(),
-    }),
-  });
+  let subscription: PushSubscription;
+  try {
+    const existing = await registration.pushManager.getSubscription();
+    subscription =
+      existing ||
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      }));
+  } catch (e: any) {
+    toast.error(`No se pudo crear la suscripción push: ${e?.message || e?.name || 'error'}`);
+    return { ok: false } as const;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.accessToken}`,
+      },
+      body: JSON.stringify({
+        userId: params.userId,
+        subscription: subscription.toJSON(),
+      }),
+    });
+  } catch (e: any) {
+    toast.error(`No se pudo activar push: ${e?.message || 'error de red'}`);
+    return { ok: false } as const;
+  }
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    toast.error('No se pudo activar push');
-    return { ok: false, error: text } as const;
+    const body = await res.text().catch(() => '');
+    const message = (() => {
+      try {
+        const parsed = JSON.parse(body);
+        return parsed?.error || body;
+      } catch {
+        return body;
+      }
+    })();
+
+    toast.error(`No se pudo activar push: ${message || `HTTP ${res.status}`}`);
+    return { ok: false, error: message } as const;
   }
 
   localStorage.setItem('pushEnabled', 'true');
