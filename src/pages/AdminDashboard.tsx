@@ -31,8 +31,8 @@ export const AdminDashboard: React.FC = () => {
     completado: reclamos.filter(r => r.estado === 'completado').length,
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       // Fetch reclamos
       const { data: reclamosData, error: reclamosError } = await supabase
@@ -55,7 +55,7 @@ export const AdminDashboard: React.FC = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -75,7 +75,7 @@ export const AdminDashboard: React.FC = () => {
         (payload) => {
           console.log('Change received!', payload);
           // Refresh data on any change
-          fetchData();
+          fetchData(true); // Silent refresh
           
           if (payload.eventType === 'INSERT') {
             const newReclamo = payload.new as Reclamo;

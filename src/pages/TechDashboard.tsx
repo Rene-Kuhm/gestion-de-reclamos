@@ -20,9 +20,9 @@ export const TechDashboard: React.FC = () => {
   const [editingReclamo, setEditingReclamo] = useState<Reclamo | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchTrabajos = async () => {
+  const fetchTrabajos = async (silent = false) => {
     if (!profile) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       // 1. Fetch assigned jobs (Pending/In Progress)
       const { data: misData, error: misError } = await supabase
@@ -61,7 +61,7 @@ export const TechDashboard: React.FC = () => {
     } catch (error) {
       console.error('Error fetching trabajos:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -93,7 +93,7 @@ export const TechDashboard: React.FC = () => {
         },
         (payload) => {
           console.log('Tech change received!', payload);
-          fetchTrabajos();
+          fetchTrabajos(true); // Silent refresh
           
           if (payload.eventType === 'INSERT') {
              // Only notify if it's assigned to me or unassigned
@@ -136,11 +136,11 @@ export const TechDashboard: React.FC = () => {
 
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === 'visible') {
-        fetchTrabajos();
+        fetchTrabajos(true); // Silent refresh
       }
     }, 25000);
 
-    const onFocus = () => fetchTrabajos();
+    const onFocus = () => fetchTrabajos(true); // Silent refresh
     window.addEventListener('focus', onFocus);
 
     return () => {
