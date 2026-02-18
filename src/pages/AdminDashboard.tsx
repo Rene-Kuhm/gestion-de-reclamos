@@ -130,6 +130,8 @@ export const AdminDashboard: React.FC = () => {
     try {
       // First delete related status updates to avoid FK constraint error
       await supabase.from('actualizaciones_estado').delete().eq('reclamo_id', id);
+      // Also delete related comments
+      await supabase.from('comentarios_reclamo').delete().eq('reclamo_id', id);
       
       const { error } = await supabase.from('reclamos').delete().eq('id', id);
       if (error) throw error;
