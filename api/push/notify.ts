@@ -4,9 +4,16 @@ import { getUserIdFromRequest } from './_lib/auth';
 import { getRequiredEnv } from './_lib/env';
 import { getSupabaseAdmin } from './_lib/supabase';
 
-// Use createRequire to import web-push robustly in Vercel environment
-const require = createRequire(import.meta.url);
-const webpush = require('web-push');
+// Helper to load web-push dynamically to prevent startup crashes
+const loadWebPush = () => {
+  try {
+    const require = createRequire(import.meta.url);
+    return require('web-push');
+  } catch (e) {
+    console.error('Failed to load web-push module:', e);
+    throw e;
+  }
+};
 
 type NotifyPayload = {
   targetUserId?: string;
@@ -17,7 +24,7 @@ type NotifyPayload = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Add CORS headers just in case (though Vercel usually handles this via vercel.json or Next.js config)
+  // Add CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -37,6 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name: 'push-notify',
       commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
       time: new Date().toISOString(),
+      node_version: process.version,
     });
     return;
   }
@@ -47,6 +55,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Dynamically load web-push inside the handler to catch module loading errors
+    let webpush: any;
+    try {
+      webpush = loadWebPush();
+    } catch (e: any) {
+      res.status(500).json({ error: 'Server configuration error: Failed to load web-push module', details: e.message });
+      return;
+    }
+
     const callerUserId = await getUserIdFromRequest(req);
     if (!callerUserId) {
       console.error('Unauthorized access attempt');
