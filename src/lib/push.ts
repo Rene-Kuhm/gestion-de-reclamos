@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { supabase } from './supabase';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -58,37 +59,21 @@ export async function enablePushForUser(params: { userId: string; accessToken: s
     return { ok: false } as const;
   }
 
-  let res: Response;
-  try {
-    res = await fetch('/api/push/subscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${params.accessToken}`,
-      },
-      body: JSON.stringify({
-        userId: params.userId,
-        subscription: subscription.toJSON(),
-      }),
-    });
-  } catch (e: any) {
-    toast.error(`No se pudo activar push: ${e?.message || 'error de red'}`);
-    return { ok: false } as const;
-  }
+  const json = subscription.toJSON() as any;
+  const { error } = await supabase.from('push_subscriptions').upsert(
+    {
+      user_id: params.userId,
+      endpoint: json?.endpoint,
+      p256dh: json?.keys?.p256dh,
+      auth: json?.keys?.auth,
+      user_agent: navigator.userAgent,
+    },
+    { onConflict: 'endpoint' }
+  );
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    const message = (() => {
-      try {
-        const parsed = JSON.parse(body);
-        return parsed?.error || body;
-      } catch {
-        return body;
-      }
-    })();
-
-    toast.error(`No se pudo activar push: ${message || `HTTP ${res.status}`}`);
-    return { ok: false, error: message } as const;
+  if (error) {
+    toast.error(`No se pudo activar push: ${error.message}`);
+    return { ok: false, error: error.message } as const;
   }
 
   localStorage.setItem('pushEnabled', 'true');
