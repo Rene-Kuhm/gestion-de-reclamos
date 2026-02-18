@@ -200,12 +200,23 @@ export const CreateReclamoForm: React.FC<CreateReclamoFormProps> = ({ onSuccess,
 
         if (session?.access_token) {
           const insertedId = inserted?.[0]?.id as string | undefined;
+          
+          // Notify technicians
           await sendPush({
             accessToken: session.access_token,
             targetRole: 'tecnico',
             title: 'Nuevo reclamo disponible',
             body: `${formData.cliente_nombre} • ${formData.tipo_servicio.replace('_', ' ')}`,
             url: insertedId ? `/tecnico/trabajo/${insertedId}` : '/tecnico'
+          });
+          
+          // Also notify admins
+          await sendPush({
+            accessToken: session.access_token,
+            targetRole: 'admin',
+            title: '📋 Nuevo Reclamo',
+            body: `#${insertedId?.slice(0, 8)} - ${formData.cliente_nombre} • ${formData.tipo_servicio.replace('_', ' ')}\n📍 ${formData.direccion}`,
+            url: insertedId ? `/admin/reclamo/${insertedId}` : '/admin'
           });
         }
         toast.success('Reclamo creado exitosamente');
