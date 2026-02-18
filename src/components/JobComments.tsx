@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Send, User, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { sendPush } from '../lib/push';
 
 interface Comment {
   id: string;
@@ -22,7 +23,7 @@ interface JobCommentsProps {
 }
 
 export const JobComments: React.FC<JobCommentsProps> = ({ reclamoId }) => {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -96,6 +97,16 @@ export const JobComments: React.FC<JobCommentsProps> = ({ reclamoId }) => {
       });
 
       if (error) throw error;
+
+      if (session?.access_token) {
+        await sendPush({
+          accessToken: session.access_token,
+          targetRole: 'admin',
+          title: 'Nuevo comentario',
+          body: newComment.trim().slice(0, 120),
+          url: '/admin'
+        });
+      }
       setNewComment('');
     } catch (error) {
       console.error('Error sending comment:', error);

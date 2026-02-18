@@ -7,9 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CreateReclamoForm } from '../components/CreateReclamoForm';
 import { JobCard } from '../components/JobCard';
+import { enablePushForUser } from '../lib/push';
 
 export const TechDashboard: React.FC = () => {
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, session } = useAuth();
   const navigate = useNavigate();
   const [trabajos, setTrabajos] = useState<Reclamo[]>([]);
   const [todosReclamos, setTodosReclamos] = useState<Reclamo[]>([]);
@@ -68,6 +69,10 @@ export const TechDashboard: React.FC = () => {
     fetchTrabajos();
 
     if (!profile) return;
+
+    if (session?.access_token && localStorage.getItem('pushEnabled') === 'true') {
+      enablePushForUser({ userId: profile.id, accessToken: session.access_token });
+    }
 
     // Request notification permission
     if ('Notification' in window) {
@@ -220,13 +225,8 @@ export const TechDashboard: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                if ('Notification' in window) {
-                  Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                      toast.success('Notificaciones activadas');
-                      sendLocalNotification('Prueba', 'Las notificaciones funcionan correctamente');
-                    }
-                  });
+                if (profile && session?.access_token) {
+                  enablePushForUser({ userId: profile.id, accessToken: session.access_token });
                 }
               }} 
               className="p-2 text-slate-400 hover:text-white transition-colors"

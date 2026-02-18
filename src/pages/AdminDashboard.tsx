@@ -9,9 +9,10 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DashboardCharts } from '../components/DashboardCharts';
 import Papa from 'papaparse';
+import { enablePushForUser, sendPush } from '../lib/push';
 
 export const AdminDashboard: React.FC = () => {
-  const { signOut } = useAuth();
+  const { signOut, profile, session } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [reclamos, setReclamos] = useState<Reclamo[]>([]);
@@ -109,6 +110,12 @@ export const AdminDashboard: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (profile && session?.access_token && localStorage.getItem('pushEnabled') === 'true') {
+      enablePushForUser({ userId: profile.id, accessToken: session.access_token });
+    }
+  }, [profile, session]);
+
   const handleAssignTechnician = async (reclamoId: string, tecnicoId: string) => {
     try {
       const { error } = await supabase
@@ -123,6 +130,17 @@ export const AdminDashboard: React.FC = () => {
         r.id === reclamoId ? { ...r, tecnico_asignado: tecnicoId || undefined } : r
       ));
       toast.success('Técnico asignado correctamente');
+
+      if (session?.access_token && tecnicoId) {
+        const reclamo = reclamos.find(r => r.id === reclamoId);
+        await sendPush({
+          accessToken: session.access_token,
+          targetUserId: tecnicoId,
+          title: 'Nuevo trabajo asignado',
+          body: reclamo ? `Cliente: ${reclamo.cliente_nombre}` : 'Se te asignó un reclamo',
+          url: reclamoId ? `/tecnico/trabajo/${reclamoId}` : '/tecnico'
+        });
+      }
     } catch (error) {
       console.error('Error assigning technician:', error);
       toast.error('Error al asignar técnico');
@@ -279,6 +297,17 @@ export const AdminDashboard: React.FC = () => {
               title="Importar Clientes (CSV)"
             >
               <Upload className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                if (profile && session?.access_token) {
+                  enablePushForUser({ userId: profile.id, accessToken: session.access_token });
+                }
+              }}
+              className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
+              title="Activar notificaciones push"
+            >
+              <Bell className="w-5 h-5" />
             </button>
             <button
               onClick={() => navigate('/profile')}

@@ -7,11 +7,12 @@ import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { JobComments } from '../components/JobComments';
+import { sendPush } from '../lib/push';
 
 export const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [trabajo, setTrabajo] = useState<Reclamo | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -114,6 +115,16 @@ export const JobDetails: React.FC = () => {
       };
 
       await supabase.from('actualizaciones_estado').insert(newEntry);
+
+      if (session?.access_token) {
+        await sendPush({
+          accessToken: session.access_token,
+          targetRole: 'admin',
+          title: 'Actualización de trabajo',
+          body: `${trabajo.cliente_nombre}: ${trabajo.estado.replace('_', ' ')} → ${nextStatus.replace('_', ' ')}`,
+          url: '/admin'
+        });
+      }
 
       setTrabajo({ ...trabajo, estado: nextStatus });
       
