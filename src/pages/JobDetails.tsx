@@ -60,6 +60,54 @@ export const JobDetails: React.FC = () => {
     fetchTrabajo();
   }, [id, navigate]);
 
+  useEffect(() => {
+    if (!id) return;
+
+    const reclamoChannel = supabase
+      .channel(`job-${id}-reclamo`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'reclamos', filter: `id=eq.${id}` },
+        (payload) => {
+          const updated = payload.new as Reclamo;
+          setTrabajo((prev) => (prev ? { ...prev, ...updated } : updated));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'reclamos', filter: `id=eq.${id}` },
+        () => {
+          toast.error('Este trabajo fue eliminado');
+          navigate('/tecnico');
+        }
+      )
+      .subscribe();
+
+    const historialChannel = supabase
+      .channel(`job-${id}-historial`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'actualizaciones_estado', filter: `reclamo_id=eq.${id}` },
+        async () => {
+          const { data: historialData, error: historialError } = await supabase
+            .from('actualizaciones_estado')
+            .select('*')
+            .eq('reclamo_id', id)
+            .order('fecha_cambio', { ascending: false });
+
+          if (!historialError) {
+            setHistorial(historialData || []);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      reclamoChannel.unsubscribe();
+      historialChannel.unsubscribe();
+    };
+  }, [id, navigate]);
+
   const handleStatusChangeClick = (newStatus: JobStatus) => {
     setNextStatus(newStatus);
     setObservation('');
