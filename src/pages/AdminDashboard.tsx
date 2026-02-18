@@ -112,7 +112,7 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     if (profile && session?.access_token && localStorage.getItem('pushEnabled') === 'true') {
-      enablePushForUser({ userId: profile.id, accessToken: session.access_token });
+      enablePushForUser({ userId: profile.id, accessToken: session.access_token, silent: true });
     }
   }, [profile, session]);
 

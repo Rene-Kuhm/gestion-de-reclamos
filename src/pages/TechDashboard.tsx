@@ -71,7 +71,7 @@ export const TechDashboard: React.FC = () => {
     if (!profile) return;
 
     if (session?.access_token && localStorage.getItem('pushEnabled') === 'true') {
-      enablePushForUser({ userId: profile.id, accessToken: session.access_token });
+      enablePushForUser({ userId: profile.id, accessToken: session.access_token, silent: true });
     }
 
     // Request notification permission
@@ -134,10 +134,21 @@ export const TechDashboard: React.FC = () => {
         }
       });
 
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchTrabajos();
+      }
+    }, 25000);
+
+    const onFocus = () => fetchTrabajos();
+    window.addEventListener('focus', onFocus);
+
     return () => {
       subscription.unsubscribe();
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
     };
-  }, [profile]);
+  }, [profile, session]);
 
   const playNotificationSound = () => {
     try {

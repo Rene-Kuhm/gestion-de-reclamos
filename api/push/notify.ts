@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createRequire } from 'module';
 import { getUserIdFromRequest } from './_lib/auth';
 import { getRequiredEnv } from './_lib/env';
 import { getSupabaseAdmin } from './_lib/supabase';
@@ -11,6 +12,8 @@ type NotifyPayload = {
   url?: string;
 };
 
+const require = createRequire(import.meta.url);
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -18,8 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const webpushMod: any = await import('web-push');
-    const webpush: any = webpushMod?.default ?? webpushMod;
+    const webpush = require('web-push') as any;
 
     const callerUserId = await getUserIdFromRequest(req);
     if (!callerUserId) {
@@ -64,10 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (payload.targetUserId) {
       targetUserIds = [payload.targetUserId];
     } else if (payload.targetRole) {
-      const { data: users, error } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('rol', payload.targetRole);
+      const { data: users, error } = await supabase.from('usuarios').select('id').eq('rol', payload.targetRole);
       if (error) {
         res.status(500).json({ error: error.message });
         return;
@@ -76,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (targetUserIds.length === 0) {
-      res.status(200).json({ ok: true, sent: 0 });
+      res.status(200).json({ ok: true, sent: 0, removed: 0 });
       return;
     }
 

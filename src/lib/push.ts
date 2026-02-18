@@ -19,21 +19,21 @@ async function getOrRegisterServiceWorker(): Promise<ServiceWorkerRegistration> 
   return registration;
 }
 
-export async function enablePushForUser(params: { userId: string; accessToken: string }) {
+export async function enablePushForUser(params: { userId: string; accessToken: string; silent?: boolean }) {
   if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-    toast.error('Este dispositivo/navegador no soporta notificaciones push');
+    if (!params.silent) toast.error('Este dispositivo/navegador no soporta notificaciones push');
     return { ok: false } as const;
   }
 
   const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
   if (!vapidPublicKey) {
-    toast.error('Falta configurar VITE_VAPID_PUBLIC_KEY');
+    if (!params.silent) toast.error('Falta configurar VITE_VAPID_PUBLIC_KEY');
     return { ok: false } as const;
   }
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
-    toast.error('Permiso de notificaciones denegado');
+    if (!params.silent) toast.error('Permiso de notificaciones denegado');
     return { ok: false } as const;
   }
 
@@ -41,7 +41,7 @@ export async function enablePushForUser(params: { userId: string; accessToken: s
   try {
     registration = await getOrRegisterServiceWorker();
   } catch (e: any) {
-    toast.error(`No se pudo registrar el Service Worker: ${e?.message || 'error'}`);
+    if (!params.silent) toast.error(`No se pudo registrar el Service Worker: ${e?.message || 'error'}`);
     return { ok: false } as const;
   }
 
@@ -55,7 +55,7 @@ export async function enablePushForUser(params: { userId: string; accessToken: s
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       }));
   } catch (e: any) {
-    toast.error(`No se pudo crear la suscripción push: ${e?.message || e?.name || 'error'}`);
+    if (!params.silent) toast.error(`No se pudo crear la suscripción push: ${e?.message || e?.name || 'error'}`);
     return { ok: false } as const;
   }
 
@@ -72,12 +72,12 @@ export async function enablePushForUser(params: { userId: string; accessToken: s
   );
 
   if (error) {
-    toast.error(`No se pudo activar push: ${error.message}`);
+    if (!params.silent) toast.error(`No se pudo activar push: ${error.message}`);
     return { ok: false, error: error.message } as const;
   }
 
   localStorage.setItem('pushEnabled', 'true');
-  toast.success('Notificaciones push activadas');
+  if (!params.silent) toast.success('Notificaciones push activadas');
   return { ok: true } as const;
 }
 
