@@ -104,7 +104,13 @@ export async function sendPush(params: {
     }),
   });
 
-  const data = await res.json().catch(() => null);
-  return { ok: res.ok, data } as const;
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const data = await res.json().catch(() => null);
+    return { ok: res.ok, data } as const;
+  }
+
+  const text = await res.text().catch(() => '');
+  return { ok: res.ok, data: { error: text || `HTTP ${res.status}` } } as const;
 }
 
