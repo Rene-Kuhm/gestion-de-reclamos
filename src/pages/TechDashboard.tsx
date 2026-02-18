@@ -116,7 +116,14 @@ export const TechDashboard: React.FC = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Tech subscription active!');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Tech subscription failed');
+          toast.error('Error de conexión en tiempo real');
+        }
+      });
 
     return () => {
       subscription.unsubscribe();

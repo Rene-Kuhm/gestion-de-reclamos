@@ -73,6 +73,7 @@ export const AdminDashboard: React.FC = () => {
           console.log('Change received!', payload);
           // Refresh data on any change
           fetchData();
+          
           if (payload.eventType === 'INSERT') {
             toast.info('Nuevo reclamo registrado');
           } else if (payload.eventType === 'UPDATE') {
@@ -81,10 +82,17 @@ export const AdminDashboard: React.FC = () => {
             if (newStatus !== oldStatus) {
                toast.info(`Un reclamo cambió de estado a ${newStatus.replace('_', ' ')}`);
             }
+          } else if (payload.eventType === 'DELETE') {
+             toast.error('Reclamo eliminado');
+             setReclamos(prev => prev.filter(r => r.id !== payload.old.id));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Admin subscription active!');
+        }
+      });
 
     return () => {
       subscription.unsubscribe();
