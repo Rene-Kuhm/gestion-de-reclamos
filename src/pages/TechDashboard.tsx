@@ -238,14 +238,28 @@ export const TechDashboard: React.FC = () => {
             <button
               onClick={async () => {
                 if (!profile || !session?.access_token) return;
-                await sendPush({
+
+                await enablePushForUser({ userId: profile.id, accessToken: session.access_token });
+                const result = await sendPush({
                   accessToken: session.access_token,
                   targetUserId: profile.id,
                   title: 'Prueba de notificación',
                   body: 'Push configurado correctamente',
                   url: '/tecnico'
                 });
-                toast.success('Prueba enviada (revisa la notificación del sistema)');
+
+                if (!result.ok) {
+                  toast.error('Falló el envío del push (revisa variables en Vercel)');
+                  return;
+                }
+
+                const sent = Number(result.data?.sent ?? 0);
+                if (sent <= 0) {
+                  toast.error('No hay suscripción push registrada en este dispositivo');
+                  return;
+                }
+
+                toast.success('Prueba enviada (debería llegar aunque esté cerrada)');
               }}
               className="p-2 text-slate-400 hover:text-white transition-colors"
               title="Enviar prueba push"

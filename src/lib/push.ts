@@ -12,9 +12,10 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 async function getOrRegisterServiceWorker(): Promise<ServiceWorkerRegistration> {
-  const existing = await navigator.serviceWorker.getRegistration();
-  if (existing) return existing;
-  return navigator.serviceWorker.register('/sw.js');
+  const registration = await navigator.serviceWorker.register('/sw.js');
+  await registration.update().catch(() => undefined);
+  await navigator.serviceWorker.ready;
+  return registration;
 }
 
 export async function enablePushForUser(params: { userId: string; accessToken: string }) {
@@ -75,7 +76,7 @@ export async function sendPush(params: {
   body: string;
   url?: string;
 }) {
-  await fetch('/api/push/notify', {
+  const res = await fetch('/api/push/notify', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -89,5 +90,8 @@ export async function sendPush(params: {
       url: params.url,
     }),
   });
+
+  const data = await res.json().catch(() => null);
+  return { ok: res.ok, data } as const;
 }
 
