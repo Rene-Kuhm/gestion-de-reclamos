@@ -1,17 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Reclamo, UserProfile } from '../types';
 import { CreateReclamoForm } from '../components/CreateReclamoForm';
-import { LogOut, Plus, RefreshCw, UserCog, ClipboardList, Clock, CheckCircle, Activity, Search, Download, Users, Wifi, Tv, Phone, Zap, Trash2, Edit } from 'lucide-react';
+import { LogOut, Plus, RefreshCw, UserCog, ClipboardList, Clock, CheckCircle, Activity, Search, Download, Users, Wifi, Tv, Phone, Zap, Trash2, Edit, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DashboardCharts } from '../components/DashboardCharts';
+import Papa from 'papaparse';
 
 export const AdminDashboard: React.FC = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [reclamos, setReclamos] = useState<Reclamo[]>([]);
   const [tecnicos, setTecnicos] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,6 +181,49 @@ export const AdminDashboard: React.FC = () => {
     toast.success('Reporte descargado correctamente');
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const clients = results.data.map((row: any) => ({
+          nombre: row.nombre || row.Nombre || row.CLIENTE,
+          direccion: row.direccion || row.Direccion || row.DOMICILIO,
+          telefono: row.telefono || row.Telefono || row.CELULAR || '',
+          tipo_servicio: row.servicio || row.Servicio || row.SERVICIO || 'fibra_optica',
+          numero_cliente: row.numero || row.Numero || row.ID || ''
+        })).filter(c => c.nombre && c.direccion); // Filter valid rows
+
+        if (clients.length === 0) {
+          toast.error('No se encontraron clientes válidos en el archivo');
+          return;
+        }
+
+        try {
+          const { error } = await supabase.from('clientes').upsert(
+            clients, 
+            { onConflict: 'nombre' } // Update if name exists (simple deduplication)
+          );
+
+          if (error) throw error;
+          toast.success(`${clients.length} clientes importados correctamente`);
+        } catch (error: any) {
+          console.error('Import error:', error);
+          toast.error('Error al importar clientes: ' + error.message);
+        }
+        
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      },
+      error: (error) => {
+        toast.error('Error al leer el archivo CSV: ' + error.message);
+      }
+    });
+  };
+
   const filteredReclamos = reclamos.filter(r => {
     const matchesStatus = filterStatus === 'all' ? true : r.estado === filterStatus;
     const matchesSearch = searchTerm === '' || 
@@ -213,6 +258,20 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-gray-500 hover:text-green-600 transition-colors"
+              title="Importar Clientes (CSV)"
+            >
+              <Upload className="w-5 h-5" />
+            </button>
             <button
               onClick={() => navigate('/profile')}
               className="p-2 text-gray-500 hover:text-blue-600 transition-colors"

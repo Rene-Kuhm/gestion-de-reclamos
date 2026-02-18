@@ -27,6 +27,17 @@ export interface Reclamo {
   estado: JobStatus;
   fecha_creacion: string;
   fecha_actualizacion: string;
+  foto_cierre?: string;
+}
+
+export interface Cliente {
+  id: string;
+  nombre: string;
+  telefono?: string;
+  direccion: string;
+  tipo_servicio?: ServiceType;
+  numero_cliente?: string;
+  created_at: string;
 }
 
 export interface ActualizacionEstado {

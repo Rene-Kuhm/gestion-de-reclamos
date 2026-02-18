@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { ServiceType, Reclamo } from '../types';
+import { ServiceType, Reclamo, Cliente } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { PlusCircle, Save, MapPin, Loader2, LocateFixed, Map as MapIcon, Edit } from 'lucide-react';
+import { PlusCircle, Save, MapPin, LocateFixed, Map as MapIcon, Edit, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { LocationPickerMap } from './LocationPickerMap';
 
@@ -26,6 +26,79 @@ export const CreateReclamoForm: React.FC<CreateReclamoFormProps> = ({ onSuccess,
   });
 
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<Cliente[]>([]);
+  const [showResults, setShowResults] = useState(false);
+
+  // Search clients when typing
+  useEffect(() => {
+    const searchClients = async () => {
+      if (searchTerm.length < 2) {
+        setSearchResults([]);
+        setShowResults(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .ilike('nombre', `%${searchTerm}%`)
+        .limit(5);
+
+      if (!error && data) {
+        setSearchResults(data);
+        setShowResults(true);
+      }
+    };
+
+    const timeoutId = setTimeout(searchClients, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const selectClient = (client: Cliente) => {
+    setFormData(prev => ({
+      ...prev,
+      cliente_nombre: client.nombre,
+      cliente_telefono: client.telefono || '',
+      direccion: client.direccion,
+      tipo_servicio: client.tipo_servicio || 'fibra_optica'
+    }));
+    setSearchTerm('');
+    setShowResults(false);
+    toast.success('Datos del cliente cargados');
+  };
+
+  const saveOrUpdateClient = async (data: typeof formData) => {
+    // Check if client exists by exact name match
+    const { data: existingClients } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('nombre', data.cliente_nombre)
+      .limit(1);
+
+    if (existingClients && existingClients.length > 0) {
+      // Update existing
+      await supabase
+        .from('clientes')
+        .update({
+          telefono: data.cliente_telefono,
+          direccion: data.direccion,
+          tipo_servicio: data.tipo_servicio,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingClients[0].id);
+    } else {
+      // Create new
+      await supabase
+        .from('clientes')
+        .insert({
+          nombre: data.cliente_nombre,
+          telefono: data.cliente_telefono,
+          direccion: data.direccion,
+          tipo_servicio: data.tipo_servicio
+        });
+    }
+  };
 
   const getGeolocation = () => {
     if (!navigator.geolocation) {
@@ -96,6 +169,9 @@ export const CreateReclamoForm: React.FC<CreateReclamoFormProps> = ({ onSuccess,
     
     setLoading(true);
     try {
+      // Auto-save/update client data
+      await saveOrUpdateClient(formData);
+
       if (initialData) {
         // Update existing reclamo
         const { error } = await supabase
@@ -147,6 +223,39 @@ export const CreateReclamoForm: React.FC<CreateReclamoFormProps> = ({ onSuccess,
         )}
       </h3>
       
+      {/* Client Search Bar */}
+      {!initialData && (
+        <div className="mb-4 relative">
+          <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Buscar Cliente Existente</label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Escribe el nombre del cliente para autocompletar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-blue-50 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+            <Search className="w-4 h-4 text-blue-400 absolute left-3 top-2.5" />
+          </div>
+          
+          {showResults && searchResults.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {searchResults.map((client) => (
+                <button
+                  key={client.id}
+                  type="button"
+                  onClick={() => selectClient(client)}
+                  className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-0"
+                >
+                  <p className="font-medium text-gray-900 text-sm">{client.nombre}</p>
+                  <p className="text-xs text-gray-500 truncate">{client.direccion}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
