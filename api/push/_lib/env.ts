@@ -5,3 +5,8 @@ export function getRequiredEnv(name: string): string {
   }
   return value.trim();
 }
+
+export function getRequiredEnvSafe(name: string): string | undefined {
+  const value = process.env[name] || process.env[`VITE_${name}`];
+  return value?.trim();
+}

@@ -60,7 +60,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       webpush = loadWebPush();
     } catch (e: any) {
+      console.error('Failed to load web-push:', e);
       res.status(500).json({ error: 'Server configuration error: Failed to load web-push module', details: e.message });
+      return;
+    }
+
+    // Initialize Supabase Admin
+    let supabase: any;
+    try {
+      supabase = getSupabaseAdmin();
+    } catch (e: any) {
+      console.error('Failed to initialize Supabase:', e);
+      res.status(500).json({ error: 'Server configuration error', details: e.message });
       return;
     }
 
@@ -78,8 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    // Initialize Supabase
-    const supabase = getSupabaseAdmin();
+    // Initialize Supabase (already initialized above)
     
     // Check permissions
     const { data: callerProfile, error: callerErr } = await supabase
