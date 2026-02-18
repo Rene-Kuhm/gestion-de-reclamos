@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import * as webpush from 'web-push';
 import { getUserIdFromRequest } from './_lib/auth';
 import { getRequiredEnv } from './_lib/env';
 import { getSupabaseAdmin } from './_lib/supabase';
@@ -19,6 +18,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const webpushMod: any = await import('web-push');
+    const webpush: any = webpushMod?.default ?? webpushMod;
+
     const callerUserId = await getUserIdFromRequest(req);
     if (!callerUserId) {
       res.status(401).json({ error: 'Unauthorized' });
