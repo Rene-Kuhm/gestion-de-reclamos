@@ -32,7 +32,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ reclamos }) =>
       {/* Status Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Estado de Reclamos</h3>
-        <div className="h-64 w-full">
+        <div className="h-64 w-full min-h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -59,7 +59,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ reclamos }) =>
       {/* Service Type Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Reclamos por Servicio</h3>
-        <div className="h-64 w-full">
+        <div className="h-64 w-full min-h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={serviceData}
