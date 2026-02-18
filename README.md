@@ -1,72 +1,28 @@
-# Cospec Ltd - Sistema de Gestión de Reclamos
+# Gestión de Reclamos - Cospec Ltd
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![React](https://img.shields.io/badge/React-18-blue) ![Vite](https://img.shields.io/badge/Vite-5-purple) ![Supabase](https://img.shields.io/badge/Supabase-Database-green)
+Sistema de gestión de reclamos técnicos y asignación de trabajos para Cospec Ltd.
 
-Una plataforma integral diseñada para optimizar el flujo de trabajo entre la administración y los técnicos de campo en servicios de telecomunicaciones (Fibra Óptica, ADSL, TV, Telefonía).
+## Características
 
-## 🚀 Características Principales
+- **Panel de Administrador**: Gestión completa de reclamos, técnicos y clientes.
+- **Panel de Técnico**: Visualización de trabajos asignados, mapa de ruta y actualizaciones de estado.
+- **Notificaciones Push**: Alertas en tiempo real para técnicos (Web Push) y administradores.
+- **PWA**: Instalable en dispositivos móviles, con soporte offline básico.
+- **Mapa Interactivo**: Ubicación de reclamos en mapa (Leaflet).
 
-### 👨‍💼 Panel de Administración
-*   **Gestión de Reclamos**: Alta, modificación y seguimiento de incidencias.
-*   **Asignación Inteligente**: Asignación de técnicos y priorización de tareas.
-*   **Dashboard en Tiempo Real**: Visualización del estado de la red y productividad.
+## Tecnologías
 
-### 👷 Panel Técnico (App Móvil / PWA)
-*   **Bolsa de Trabajo**: Visualización de reclamos pendientes y auto-asignación.
-*   **Geolocalización**: Mapa interactivo con la ubicación exacta de los clientes y navegación GPS.
-*   **Gestión de Incidencias**: Cierre de trabajos, reporte de soluciones y comentarios.
-*   **Métricas Personales**: Gráficos de rendimiento semanal, mensual y anual.
-*   **Modo Offline**: Funcionalidad básica sin conexión.
+- Frontend: React + Vite + TypeScript + Tailwind CSS
+- Backend: Supabase (PostgreSQL + Auth + Realtime) + Vercel Serverless Functions
+- Notificaciones: Web Push Protocol (VAPID)
 
-### 🔔 Notificaciones y Comunicación
-*   **Alertas Push**: Notificaciones instantáneas al recibir nuevos trabajos.
-*   **Historial**: Registro completo de trabajos realizados.
+## Configuración
 
-## 🛠️ Tecnologías Utilizadas
+El proyecto requiere las siguientes variables de entorno en Vercel:
 
-*   **Frontend**: React.js, TypeScript, Vite
-*   **Estilos**: Tailwind CSS, Lucide Icons
-*   **Base de Datos & Auth**: Supabase (PostgreSQL)
-*   **Mapas**: Leaflet / React-Leaflet
-*   **Gráficos**: Recharts
-*   **PWA**: Vite PWA Plugin
-
-## 📱 Instalación (PWA)
-
-Esta aplicación es una **Progressive Web App**. Puedes instalarla en tu dispositivo móvil o escritorio sin necesidad de tiendas de aplicaciones.
-
-1.  Abre la aplicación en tu navegador (Chrome/Safari).
-2.  **Android/PC**: Haz clic en el botón "Instalar App" que aparece automáticamente o en el menú del navegador "Instalar aplicación".
-3.  **iOS**: Toca el botón "Compartir" y selecciona "Añadir a la pantalla de inicio".
-
-## 🔧 Configuración del Proyecto (Desarrollo)
-
-1.  **Clonar el repositorio**
-    ```bash
-    git clone https://github.com/Rene-Kuhm/gestion-de-reclamos.git
-    cd gestion-de-reclamos
-    ```
-
-2.  **Instalar dependencias**
-    ```bash
-    npm install
-    ```
-
-3.  **Configurar variables de entorno**
-    Crea un archivo `.env` en la raíz con tus credenciales de Supabase:
-    ```env
-    VITE_SUPABASE_URL=tu_url_supabase
-    VITE_SUPABASE_ANON_KEY=tu_anon_key_supabase
-    ```
-
-4.  **Iniciar servidor de desarrollo**
-    ```bash
-    npm run dev
-    ```
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
-
----
-Desarrollado para **Cospec Ltd**.
+- `VITE_SUPABASE_URL`: URL de tu proyecto Supabase.
+- `VITE_SUPABASE_ANON_KEY`: Clave anónima pública de Supabase.
+- `SUPABASE_SERVICE_ROLE_KEY`: Clave de servicio (Service Role) de Supabase (solo backend).
+- `VAPID_PUBLIC_KEY` y `VITE_VAPID_PUBLIC_KEY`: Clave pública VAPID (deben ser iguales).
+- `VAPID_PRIVATE_KEY`: Clave privada VAPID.
+- `VAPID_SUBJECT`: Email de contacto (ej: `mailto:admin@cospec.com`).
