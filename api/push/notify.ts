@@ -89,8 +89,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    // Initialize Supabase (already initialized above)
-    
     // Check permissions
     const { data: callerProfile, error: callerErr } = await supabase
       .from('usuarios')
