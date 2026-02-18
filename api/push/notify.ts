@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createRequire } from 'module';
+import webpush from 'web-push';
 import { getUserIdFromRequest } from './_lib/auth';
 import { getRequiredEnv } from './_lib/env';
 import { getSupabaseAdmin } from './_lib/supabase';
@@ -12,14 +12,27 @@ type NotifyPayload = {
   url?: string;
 };
 
-const require = createRequire(import.meta.url);
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Add CORS headers just in case (though Vercel usually handles this via vercel.json or Next.js config)
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method === 'GET') {
     res.status(200).json({
       ok: true,
       name: 'push-notify',
       commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+      time: new Date().toISOString(),
     });
     return;
   }
@@ -30,21 +43,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const webpush = require('web-push') as any;
-
     const callerUserId = await getUserIdFromRequest(req);
     if (!callerUserId) {
+      console.error('Unauthorized access attempt');
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
     const payload = req.body as NotifyPayload;
     if (!payload?.title || !payload?.body || (!payload.targetUserId && !payload.targetRole)) {
+      console.error('Invalid payload', payload);
       res.status(400).json({ error: 'Invalid payload' });
       return;
     }
 
+    // Initialize Supabase
     const supabase = getSupabaseAdmin();
+    
+    // Check permissions
     const { data: callerProfile, error: callerErr } = await supabase
       .from('usuarios')
       .select('id, rol')
@@ -52,10 +68,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (callerErr || !callerProfile) {
+      console.error('Caller profile error', callerErr);
       res.status(403).json({ error: 'Forbidden' });
       return;
     }
 
+    // Role-based access control
     if (payload.targetRole === 'tecnico' && callerProfile.rol !== 'admin') {
       res.status(403).json({ error: 'Only admin can notify technicians' });
       return;
@@ -71,12 +89,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
+    // Resolve target users
     let targetUserIds: string[] = [];
     if (payload.targetUserId) {
       targetUserIds = [payload.targetUserId];
     } else if (payload.targetRole) {
       const { data: users, error } = await supabase.from('usuarios').select('id').eq('rol', payload.targetRole);
       if (error) {
+        console.error('Error fetching target users', error);
         res.status(500).json({ error: error.message });
         return;
       }
@@ -84,23 +104,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (targetUserIds.length === 0) {
-      res.status(200).json({ ok: true, sent: 0, removed: 0 });
+      res.status(200).json({ ok: true, sent: 0, removed: 0, message: 'No target users found' });
       return;
     }
 
-    const vapidPublicKey = getRequiredEnv('VAPID_PUBLIC_KEY');
-    const vapidPrivateKey = getRequiredEnv('VAPID_PRIVATE_KEY');
-    const vapidSubject = getRequiredEnv('VAPID_SUBJECT');
+    // Setup Web Push
+    try {
+      const vapidPublicKey = getRequiredEnv('VAPID_PUBLIC_KEY');
+      const vapidPrivateKey = getRequiredEnv('VAPID_PRIVATE_KEY');
+      const vapidSubject = getRequiredEnv('VAPID_SUBJECT');
 
-    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+      webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+    } catch (err: any) {
+      console.error('VAPID Configuration Error:', err);
+      res.status(500).json({ error: `Server Configuration Error: ${err.message}` });
+      return;
+    }
 
+    // Fetch subscriptions
     const { data: subs, error: subsError } = await supabase
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth')
       .in('user_id', targetUserIds);
 
     if (subsError) {
+      console.error('Error fetching subscriptions', subsError);
       res.status(500).json({ error: subsError.message });
+      return;
+    }
+
+    if (!subs || subs.length === 0) {
+      res.status(200).json({ ok: true, sent: 0, removed: 0, message: 'No subscriptions found for target users' });
       return;
     }
 
@@ -112,8 +146,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let sent = 0;
     let removed = 0;
+    const errors: any[] = [];
 
-    for (const sub of subs || []) {
+    // Send notifications in parallel
+    await Promise.all(subs.map(async (sub) => {
       try {
         await webpush.sendNotification(
           {
@@ -129,15 +165,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (err: any) {
         const statusCode = err?.statusCode;
         if (statusCode === 404 || statusCode === 410) {
+          // Subscription is dead, remove it
           await supabase.from('push_subscriptions').delete().eq('id', sub.id);
           removed += 1;
+        } else {
+          console.error(`Error sending push to ${sub.id}:`, err);
+          errors.push({ id: sub.id, error: err.message || 'Unknown error' });
         }
       }
-    }
+    }));
 
-    res.status(200).json({ ok: true, sent, removed });
+    res.status(200).json({ ok: true, sent, removed, errors: errors.length > 0 ? errors : undefined });
   } catch (e: any) {
-    res.status(500).json({ error: e?.message || 'Server error' });
+    console.error('Unhandled error in handler:', e);
+    res.status(500).json({ error: e?.message || 'Server error', stack: process.env.NODE_ENV === 'development' ? e.stack : undefined });
   }
 }
-

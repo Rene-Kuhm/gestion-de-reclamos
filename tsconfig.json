@@ -14,6 +14,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": false,
     "moduleDetection": "force",
+    "esModuleInterop": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": false,
