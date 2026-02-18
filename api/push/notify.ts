@@ -1,8 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import webpush from 'web-push';
+import { createRequire } from 'module';
 import { getUserIdFromRequest } from './_lib/auth';
 import { getRequiredEnv } from './_lib/env';
 import { getSupabaseAdmin } from './_lib/supabase';
+
+// Use createRequire to import web-push robustly in Vercel environment
+const require = createRequire(import.meta.url);
+const webpush = require('web-push');
 
 type NotifyPayload = {
   targetUserId?: string;
