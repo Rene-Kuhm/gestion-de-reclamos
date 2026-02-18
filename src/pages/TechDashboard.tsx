@@ -94,7 +94,9 @@ export const TechDashboard: React.FC = () => {
              // Only notify if it's assigned to me or unassigned
              const newReclamo = payload.new as Reclamo;
              if (newReclamo.tecnico_asignado === profile.id) {
-               toast.success('¡Nuevo trabajo asignado!');
+               toast('Nuevo trabajo asignado', {
+                 description: `Cliente: ${newReclamo.cliente_nombre}`
+               });
                playNotificationSound();
                sendLocalNotification('Nuevo Trabajo Asignado', `Cliente: ${newReclamo.cliente_nombre}`);
              } else if (!newReclamo.tecnico_asignado) {
@@ -108,7 +110,9 @@ export const TechDashboard: React.FC = () => {
              if (updatedReclamo.tecnico_asignado === profile.id) {
                 // If I wasn't assigned before, or if I don't know (safest to just notify if it's now mine and not completed)
                 if (updatedReclamo.estado !== 'completado') {
-                   toast.success('¡Trabajo actualizado/asignado!');
+                   toast('Trabajo actualizado', {
+                     description: `Cliente: ${updatedReclamo.cliente_nombre}`
+                   });
                    playNotificationSound();
                    sendLocalNotification('Trabajo Actualizado', `Cliente: ${updatedReclamo.cliente_nombre}`);
                 }
@@ -132,10 +136,9 @@ export const TechDashboard: React.FC = () => {
 
   const playNotificationSound = () => {
     try {
-      const audio = new Audio('/notification.mp3'); // We'll need to ensure this file exists or use a base64 string
-      // Fallback to a simple beep if file not found or just rely on browser beep
-      // For now, let's assume we might not have the file and just log
-      console.log('Playing notification sound');
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => undefined);
     } catch (e) {
       console.error('Audio play failed', e);
     }
@@ -145,9 +148,8 @@ export const TechDashboard: React.FC = () => {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, {
         body,
-        icon: '/pwa-192x192.png', // Assuming PWA icon exists
-        vibrate: [200, 100, 200]
-      });
+        icon: '/pwa-192x192.svg'
+      } as NotificationOptions);
     }
   };
 

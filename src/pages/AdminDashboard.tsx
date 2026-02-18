@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Reclamo, UserProfile } from '../types';
 import { CreateReclamoForm } from '../components/CreateReclamoForm';
-import { LogOut, Plus, RefreshCw, UserCog, ClipboardList, Clock, CheckCircle, Activity, Search, Download, Users, Wifi, Tv, Phone, Zap, Trash2, Edit, Upload } from 'lucide-react';
+ import { LogOut, Plus, RefreshCw, UserCog, ClipboardList, Clock, CheckCircle, Activity, Search, Download, Users, Wifi, Tv, Phone, Zap, Trash2, Edit, Upload, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -77,15 +77,23 @@ export const AdminDashboard: React.FC = () => {
           fetchData();
           
           if (payload.eventType === 'INSERT') {
-            toast.info('Nuevo reclamo registrado');
+            const newReclamo = payload.new as Reclamo;
+            toast('Nuevo reclamo', {
+              icon: <Bell className="w-4 h-4" />,
+              description: `${newReclamo.cliente_nombre} • ${newReclamo.tipo_servicio.replace('_', ' ')}`
+            });
           } else if (payload.eventType === 'UPDATE') {
             const newStatus = (payload.new as Reclamo).estado;
             const oldStatus = (payload.old as Reclamo).estado;
             if (newStatus !== oldStatus) {
-               toast.info(`Un reclamo cambió de estado a ${newStatus.replace('_', ' ')}`);
+               toast(`Cambio de estado: ${newStatus.replace('_', ' ')}`, {
+                 icon: <Activity className="w-4 h-4" />
+               });
             }
           } else if (payload.eventType === 'DELETE') {
-             toast.error('Reclamo eliminado');
+             toast('Reclamo eliminado', {
+               icon: <Trash2 className="w-4 h-4" />
+             });
              setReclamos(prev => prev.filter(r => r.id !== payload.old.id));
           }
         }
@@ -130,8 +138,13 @@ export const AdminDashboard: React.FC = () => {
     if (!confirm('¿Estás seguro de que deseas eliminar este reclamo? Esta acción no se puede deshacer.')) return;
 
     try {
-      const { error } = await supabase.from('reclamos').delete().eq('id', id);
+      const { data, error } = await supabase.from('reclamos').delete().eq('id', id).select('id');
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('No se pudo eliminar (permiso o reclamo inexistente)');
+        return;
+      }
       
       setReclamos(prev => prev.filter(r => r.id !== id));
       toast.success('Reclamo eliminado correctamente');
