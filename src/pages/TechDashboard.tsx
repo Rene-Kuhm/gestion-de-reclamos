@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Reclamo } from '../types';
-import { LogOut, RefreshCw, Briefcase, Map as MapIcon, User, PlusCircle, Search, History, BarChart3, Calendar, CheckCircle, Bell } from 'lucide-react';
+import { LogOut, RefreshCw, Briefcase, Map as MapIcon, User, PlusCircle, Search, History, BarChart3, Calendar, CheckCircle, Bell, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CreateReclamoForm } from '../components/CreateReclamoForm';
 import { JobCard } from '../components/JobCard';
-import { enablePushForUser } from '../lib/push';
+import { enablePushForUser, sendPush } from '../lib/push';
 
 export const TechDashboard: React.FC = () => {
   const { signOut, profile, session } = useAuth();
@@ -233,6 +233,24 @@ export const TechDashboard: React.FC = () => {
               title="Activar notificaciones"
             >
               <Bell className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={async () => {
+                if (!profile || !session?.access_token) return;
+                await sendPush({
+                  accessToken: session.access_token,
+                  targetUserId: profile.id,
+                  title: 'Prueba de notificación',
+                  body: 'Push configurado correctamente',
+                  url: '/tecnico'
+                });
+                toast.success('Prueba enviada (revisa la notificación del sistema)');
+              }}
+              className="p-2 text-slate-400 hover:text-white transition-colors"
+              title="Enviar prueba push"
+            >
+              <Send className="w-5 h-5" />
             </button>
           </div>
 

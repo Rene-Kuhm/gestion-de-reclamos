@@ -53,6 +53,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
+    if (payload.targetUserId && callerProfile.rol !== 'admin' && payload.targetUserId !== callerUserId) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
     let targetUserIds: string[] = [];
     if (payload.targetUserId) {
       targetUserIds = [payload.targetUserId];

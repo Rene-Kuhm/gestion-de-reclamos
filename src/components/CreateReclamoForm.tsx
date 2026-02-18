@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { PlusCircle, Save, MapPin, LocateFixed, Map as MapIcon, Edit, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { LocationPickerMap } from './LocationPickerMap';
+import { sendPush } from '../lib/push';
 
 interface CreateReclamoFormProps {
   onSuccess: () => void;
@@ -13,7 +14,7 @@ interface CreateReclamoFormProps {
 }
 
 export const CreateReclamoForm: React.FC<CreateReclamoFormProps> = ({ onSuccess, onCancel, initialData }) => {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     tipo_servicio: initialData?.tipo_servicio || 'fibra_optica' as ServiceType,
@@ -187,15 +188,26 @@ export const CreateReclamoForm: React.FC<CreateReclamoFormProps> = ({ onSuccess,
         toast.success('Reclamo actualizado exitosamente');
       } else {
         // Create new reclamo
-        const { error } = await supabase.from('reclamos').insert({
+        const { data: inserted, error } = await supabase.from('reclamos').insert({
           ...formData,
           latitud: formData.latitud ? parseFloat(formData.latitud) : null,
           longitud: formData.longitud ? parseFloat(formData.longitud) : null,
           creado_por: profile.id,
           estado: 'pendiente',
-        });
+        }).select('id');
 
         if (error) throw error;
+
+        if (session?.access_token) {
+          const insertedId = inserted?.[0]?.id as string | undefined;
+          await sendPush({
+            accessToken: session.access_token,
+            targetRole: 'tecnico',
+            title: 'Nuevo reclamo disponible',
+            body: `${formData.cliente_nombre} • ${formData.tipo_servicio.replace('_', ' ')}`,
+            url: insertedId ? `/tecnico/trabajo/${insertedId}` : '/tecnico'
+          });
+        }
         toast.success('Reclamo creado exitosamente');
       }
       onSuccess();
